@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+  <meta charset="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+
+<style>
+#canvas{
+background-color: black;
+}
+#timer{
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    font-size: 50px;
+    
+    line-height: 98px;
+    text-align: center;
+    background: #000;
+    
+    color: red;
+  }
+#end{
+ text-align:center;}
+#end1{
+  text-align:center;
+}
+</style>
+</head>
+<body>
+<canvas id = 'canvas' width = 1500px height = 600 px ></canvas>
+<h1 id ='timer' ></h1>
+<h1 id = 'end'>BEST SCORE</h1>
+<h2 id = 'end1'><h2>
+<audio id = 'sound' src= 'bensound-littleidea.mp3'></audio>
+<audio id='sound2' src='blop-mark-di-angelo-79054334.mp3'></audio> 
+<audio id ='sound3' src='loud-alarm-clock-buzzer-muk1984-493547174.mp3'></audio>
+</body>
+<script>
+var canvas = document.getElementById('canvas')
+var ctx = canvas.getContext('2d')
+var lx = []
+var ly = []
+var lr = []
+var ldx = []
+var ldy = []
+var visibility =1;
+var gamePaused = false;
+var x;
+var y;
+var score = 0;
+var gameclick = false ;
+var sound2 = document.getElementById('sound2');
+var sound = document.getElementById('sound');
+var count = 0;
+var a = canvas.width/2;
+var b = canvas.height/2;
+var r ;
+var area = 0;
+var canvasArea = canvas.height * canvas.width ;
+var sound3 = document.getElementById('sound3')
+
+sound.play(); 
+for (var i = 0; i < Math.floor(Math.random() * (25 - 20 + 1) + 20); i++) {
+  let ballradius = Math.floor(Math.random() * (50 - 40 + 1) + 40)
+
+  let x = Math.floor(
+    Math.random() * (canvas.width - 2 * ballradius + 1) + ballradius
+  )
+  let y = Math.floor(
+      Math.random() * (canvas.height - 2 * ballradius + 1) + ballradius
+  )
+    let dx = Math.floor(Math.random() * (2 - 1 + 1) + 1)
+  let dy = -Math.floor(Math.random() * (2 - 1 + 1) + 1)
+   if (i != 0) {
+    for (let j = 0; j < lx.length; j++) {
+      if (
+        Math.sqrt(Math.pow(x - lx[j], 2) + Math.pow(y - ly[j], 2)) <
+        ballradius + lr[j]
+      ) {
+        let ballradius = Math.floor(Math.random() * (50 - 20 + 1) + 20)
+        x = Math.floor(
+          Math.random() * (canvas.width - 2 * ballradius + 1) + ballradius
+        )
+        y = Math.floor(
+          Math.random() * (canvas.height - 2 * ballradius + 1) + ballradius
+        )
+
+        dx = Math.floor(Math.random() * (6 - 2 + 1) + 2)
+        dy = -Math.floor(Math.random() * (6 - 2 + 1) + 2)
+        j = -1
+      }
+    }
+  }
+  lx.push(x)
+  ly.push(y)
+  lr.push(ballradius)
+  ldx.push(dx)
+  ldy.push(dy)
+  count++
+}
+
+// getting the area of balls
+for(var j =0; j <lr.length ; j++){
+    area = Math.PI*(Math.pow(lr[j],2)) +area ;
+
+}
+
+function collision() {
+  for (var i = 0; i < lx.length-1; i++) {
+    for (var k = i+1; k < lx.length; k++) {
+      let d = distance(lx[i],ly[i],lx[k],ly[k]);
+      if (d <lr[i]+lr[k]){
+        let theta1 = angle(ldx[i],ldy[i])
+        let theta2 = angle(ldx[k],ldy[k])
+        let phi = Math.atan2((ly[k]-ly[i]),(lx[k]-lx[i]));
+        let m1 = lr[i]**3
+        let m2 = lr[k]**3
+        let u1 = speed(ldx[i],ldy[i])
+        let u2 = speed(ldx[k],ldy[k])
+         
+        let v1x=(u1 * Math.cos(theta1 - phi) * (m1-m2) + 2*m2*u2*Math.cos(theta2 - phi)) / (m1+m2) * Math.cos(phi) + u1*Math.sin(theta1-phi) * Math.cos(phi+Math.PI/2);
+        let v1y = (u1 * Math.cos(theta1 - phi) * (m1-m2) + 2*m2*u2*Math.cos(theta2 - phi)) / (m1+m2) * Math.sin(phi) + u1*Math.sin(theta1-phi) * Math.sin(phi+Math.PI/2);
+        let v2x = (u2 * Math.cos(theta2 - phi) * (m2-m1) + 2*m1*u1*Math.cos(theta1 - phi)) / (m1+m2) * Math.cos(phi) + u2*Math.sin(theta2-phi) * Math.cos(phi+Math.PI/2);
+        let v2y = (u2 * Math.cos(theta2 - phi) * (m2-m1) + 2*m1*u1*Math.cos(theta1 - phi)) / (m1+m2) * Math.sin(phi) + u2*Math.sin(theta2-phi) * Math.sin(phi+Math.PI/2);
+        ldx[i] = v1x ;
+        ldy[i] = v1y ;
+        ldx[k] = v2x ;
+        ldy[k] = v2y ;
+        staticCollision(lx,ly,lr,i,k)
+      }}
+      wallcollision(i);
+      }
+      if (lx.length > 0)
+        wallcollision(lx.length-1)}
+function staticCollision(a,b,c,i,k,emergency = false){
+ let overlap = c[i] +c[k]-distance(a[i],b[i],a[k],b[k]);
+  if(c[i] <c[k]){
+    var biggerobject = i ;
+    var smallerobject = k ;
+      }else{
+    var biggerobject = k;
+    var smallerobject = i ;
+  }
+  if(emergency){var x ;
+    x = smallerobject ;
+    smallerobject = biggerobject;
+    biggerobject = x ;}
+  let theta = Math.atan2((b[biggerobject]-b[smallerobject]),(a[biggerobject]-a[smallerobject]))
+  a[smallerobject] -= overlap *Math.cos(theta);
+  b[smallerobject] -= overlap *Math.sin(theta);
+  if(distance(a[i],b[i],a[k],b[k])<c[i]+c[k]){
+    if(!emergency){
+      staticCollision(lx,ly,lr,true)
+    }
+
+  }
+
+}
+function wallcollision(i){
+  if (lx[i] - lr[i] + ldx[i] < 0 ||
+        lx[i] + lr[i] + ldx[i]> canvas.width) {
+        ldx[i] *= -1;
+    }
+    if (ly[i] - lr[i]+ ldy[i] < 0 ||
+        ly[i] + lr[i] + ldy[i]> canvas.height) {
+        ldy[i] *= -1;
+    }
+    if (ly[i] + lr[i]> canvas.height) {
+        ly[i] = canvas.height - lr[i];
+    }
+    if (ly[i] - lr[i] < 0) {
+        ly[i] = lr[i];
+    }
+    if (lx[i] + lr[i] > canvas.width) {
+        lx[i] = canvas.width - lr[i];
+    }
+    if (lx[i] - lr[i] < 0) {
+        lx[i] = lr[i];
+    }    
+}
+
+
+  function drawball(j) {
+  if (visibility === 1){
+  ctx.beginPath()
+  ctx.arc(lx[j], ly[j], lr[j], 0, Math.PI * 2)
+  ctx.fillStyle = '#BCFF2B'
+  ctx.fill()
+  ctx.closePath()
+  }else{
+ 
+  
+  visibility = 1;}
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  for (var j = 0; j < lx.length; j++) {
+   if (gamePaused) return;
+   drawball(j)
+   this.velocity= function(){
+   lx[j] += ldx[j]
+   ly[j] += ldy[j]} 
+   velocity();
+   if(gameclick){
+      
+      
+      
+      gameclick = !gameclick ;
+    
+     
+   }
+  
+    
+  
+   if (lx[j] + ldx[j] > canvas.width - lr[j] || lx[j] + ldx[j] < lr[j]) {
+      ldx[j] = -ldx[j]
+    }
+    if (ly[j] + ldy[j] > canvas.height - lr[j] || ly[j] + ldy[j] < lr[j]) {
+      ldy[j] = -ldy[j]
+    }
+    
+  }
+  
+  drawscore();    
+  collision();  
+  requestAnimationFrame(draw)
+  
+}
+
+draw()
+
+
+document.addEventListener('keydown', pauseGame);
+function pauseGame() {
+    gamePaused = !gamePaused; // toggle the gamePaused value (false <-> true)
+    
+    if (!gamePaused) draw(); // restart loop
+}
+
+var r ;
+document.addEventListener('click',brustit);
+function brustit(){
+  
+  
+  velocity();
+  console.log(lx)
+    x = event.clientX ;
+    y = event.clientY ;
+  for (var j =0 ; j < lx.length ; j++){
+    
+    if(distance(x,y,lx[j],ly[j]) < lr[j]){
+      gameclick = !gameclick;
+      r = Math.floor(Math.random() * (70 - 50 + 1) + 50)
+      
+      score++;
+      visibility = 0 ;
+      sound2.play();
+      area = area - Math.PI*(Math.pow(lr[j],2));
+      
+      touched = function(){
+       
+       lx.splice(j,1)
+       ly.splice(j,1)
+       lr.splice(j,1)
+       
+       lx.unshift(240);
+       ly.unshift(240);
+       lr.unshift(r);
+       lx.unshift(235);
+       ly.unshift(235);
+       lr.unshift(r);
+       area = area + Math.PI*(Math.pow(r,2));
+       
+       
+      if (area >= 0.75*canvasArea){
+        
+         if (typeof(Storage) !== "undefined") {
+         var array1 = localStorage.getItem("array1");
+         array1 = (array1) ? JSON.parse(array1) : [];
+         if (array1.length<=5){
+         document.getElementById("end1").innerHTML = localStorage.getItem("array1");
+   
+         array1.push(score);
+         localStorage.setItem("array1", JSON.stringify(array1));
+         var z = Math.max.apply(null,array1);
+   
+         document.getElementById("end1").innerHTML = z;
+         }else{
+         array1.sort(function(a,b){return b-a});
+         array1.splice(5);
+         document.getElementById("end1").innerHTML = localStorage.getItem("array1");
+   
+         localStorage.setItem("array1", JSON.stringify(array1));
+         var z = Math.max.apply(null,array1);
+   
+         document.getElementById("end1").innerHTML = z;
+         }
+         } else {
+         document.getElementById("end1").innerHTML = "Sorry, your browser does not support Web Storage...";
+        } 
+        alert('Game over\n bubbles took more than 75% of area\n your score'+score +'\nbest score'+document.getElementById('end1').innerText);
+         document.location.reload();
+        }
+     
+      }
+      touched();
+     
+      
+    
+    }
+  
+  }
+}
+
+
+
+
+
+function drawscore(){
+  ctx.font = '16px arial';
+  ctx.fillStyle = 'white'
+  ctx.fillText('score:'+score,8,20);
+}
+function timer(){
+    var totalsecond = 60 ;
+    setInterval(timer2,1000)
+    function timer2(){
+      if (totalsecond > 0){
+       totalsecond = totalsecond -1;
+       document.getElementById('timer').innerHTML = totalsecond ;
+      }
+      if (totalsecond <10){
+         sound3.play();
+      }
+      if (totalsecond === 0){
+        sound3.pause();
+        
+        if (typeof(Storage) !== "undefined") {
+        var array1 = localStorage.getItem("array1");
+        array1 = (array1) ? JSON.parse(array1) : [];
+        if (array1.length<=5){
+        document.getElementById("end1").innerHTML = localStorage.getItem("array1");
+   
+        array1.push(score);
+        localStorage.setItem("array1", JSON.stringify(array1));
+        var z = Math.max.apply(null,array1);
+   
+        document.getElementById("end1").innerHTML = z;
+        }else{
+         array1.sort(function(a,b){return b-a});
+         array1.splice(5);
+         document.getElementById("end1").innerHTML = localStorage.getItem("array1");
+   
+         localStorage.setItem("array1", JSON.stringify(array1));
+          var z = Math.max.apply(null,array1);
+   
+         document.getElementById("end1").innerHTML = z;
+         }
+         } else {
+        document.getElementById("end1").innerHTML = "Sorry, your browser does not support Web Storage...";
+        } 
+        
+        alert('gameover\n your score'+score+'\nbest score'+document.getElementById('end1').innerText)
+        document.location.reload();
+      }
+    
+    
+    }
+}
+timer();
+
+
+
+
+function distance(x1, y1, x2, y2) {
+  var xDist = x2 - x1;
+  var yDist = y2 - y1;
+  return Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
+}
+function angle(a,b) {
+        
+        return Math.atan2(a, b);
+    }
+function speed(a,b) {
+        
+        return Math.sqrt(a * a + b * b);
+    }
+
+
+
+</script>
+</html>
